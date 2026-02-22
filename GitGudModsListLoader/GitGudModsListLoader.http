@@ -1,0 +1,6 @@
+@GitGudModsListLoader_HostAddress = http://localhost:5010
+
+GET {{GitGudModsListLoader_HostAddress}}/ModsList/Get
+Accept: application/json
+
+###
