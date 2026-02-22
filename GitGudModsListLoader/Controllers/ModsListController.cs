@@ -17,6 +17,7 @@ public class ModsListController(
     [HttpGet]
     public async Task<IEnumerable<ModInfo>> Get(CancellationToken token)
     {
+        // TODO: Get only appropriate project (use project id from claims)
         var modsList = await modsListService.GetAllAsync(token);
         return modsList;
     }
@@ -31,7 +32,15 @@ public class ModsListController(
             return Forbid();
         }
 
-        await modsListService.UpdateAsync(projectId, token);
+        try
+        {
+            await modsListService.UpdateAsync(projectId, token);
+        }
+        catch (ProjectNotFoundException)
+        {
+            return NotFound(new { projectId });
+        }
+
         return Ok();
     }
 
