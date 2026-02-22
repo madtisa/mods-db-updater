@@ -1,6 +1,9 @@
 ﻿using GitGudModsListLoader.Models;
 using GitGudModsListLoader.Services.VersionResolver;
 using NGitLab.Models;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using YamlDotNet.RepresentationModel;
 
 namespace GitGudModsListLoader.Services;
 
@@ -67,8 +70,45 @@ public class ModsListService(
         return await Task.WhenAll(query);
     }
 
+    private record struct WorkflowTitles(string? DisplayedModName, string? ModName);
+
+    private async Task<WorkflowTitles> GetWorkflowTitlesAsync(ProjectId projectId, CancellationToken token)
+    {
+        YamlStream? workflow = await client.GetYamlAsync(projectId, ".gitlab-ci.yml", cancellationToken: token);
+        if (workflow is null || workflow.Documents.Count <= 0)
+        {
+            return default;
+        }
+
+        var workflowRoot = (YamlMappingNode)workflow.Documents[0].RootNode;
+        if (!workflowRoot.Children.TryGetValue("variables", out var workflowVariablesNode))
+        {
+            return default;
+        }
+
+        var variablesMapping = (YamlMappingNode)workflowVariablesNode;
+        WorkflowTitles titles = default;
+
+        if (
+            variablesMapping.Children.TryGetValue("DISPLAYED_MOD_NAME", out var displayedModName) &&
+            displayedModName is not null)
+        {
+            titles.DisplayedModName = displayedModName.ToString();
+        }
+
+        if (
+            variablesMapping.Children.TryGetValue("MOD_NAME", out var modName) &&
+            modName is not null)
+        {
+            titles.ModName = modName.ToString();
+        }
+
+        return titles;
+    }
+
     private async Task<ModInfo> GetModDataAsync(ModShortInfo info, CancellationToken token)
     {
+        var workflowTitlesTask = GetWorkflowTitlesAsync(info.ProjectId, token);
         Project projectDetails = await client.GetProjectInfoAsync(info.ProjectId, token);
 
         var metadata = await client.GetModMetadataAsync(info.ProjectId, info.MetadataPath, token);
@@ -82,8 +122,27 @@ public class ModsListService(
             packageType = "mod-package";
         }
 
+        HashSet<string> addedTitles = new(4, StringComparer.OrdinalIgnoreCase);
+        List<string> titles = new(4);
+        void AddTitle(string? title)
+        {
+            if (string.IsNullOrWhiteSpace(title) || !addedTitles.Add(title))
+            {
+                return;
+            }
+
+            titles.Add(title);
+        }
+
+        var workflowTitles = await workflowTitlesTask;
+        AddTitle(workflowTitles.DisplayedModName);
+
         generalSection.Remove("modName", out var title);
-        title ??= info.Title;
+        AddTitle(title);
+
+        AddTitle(info.Title);
+
+        AddTitle(workflowTitles.ModName);
 
         generalSection.Remove("pictureUrl", out var previewUrl);
         previewUrl ??= projectDetails.AvatarUrl;
@@ -108,7 +167,7 @@ public class ModsListService(
         return new ModInfo(
             info.Id,
             info.ProjectId,
-            title,
+            titles,
             packageType,
             projectDetails.StarCount,
             modCategories,

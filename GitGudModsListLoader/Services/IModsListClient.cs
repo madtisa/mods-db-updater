@@ -1,6 +1,7 @@
 ﻿using GitGudModsListLoader.Models;
 using NGitLab;
 using NGitLab.Models;
+using YamlDotNet.RepresentationModel;
 
 namespace GitGudModsListLoader.Services;
 
@@ -14,4 +15,9 @@ public interface IModsListClient
     Uri GetCommitArchiveUrl(ProjectId projectId, Sha1 commit);
     Task<IEnumerable<ModInfo>> GetModsDbAsync(CancellationToken cancellationToken);
     Task UpdateModsDbAsync(IEnumerable<ModInfo> mods, CancellationToken cancellationToken);
+    Task<YamlStream?> GetYamlAsync(
+        ProjectId projectId,
+        string path,
+        string branch = "HEAD",
+        CancellationToken cancellationToken = default);
 }

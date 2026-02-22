@@ -2,8 +2,8 @@
 
 public record ModInfo(
     int Id,
-    int ProjectId,
-    string Title,
+    long ProjectId,
+    IEnumerable<string> Titles,
     string PackageType,
     int Stars,
     IEnumerable<int> Categories,

@@ -3,7 +3,11 @@ using Microsoft.Extensions.Options;
 using NGitLab;
 using NGitLab.Models;
 using SharpConfig;
+using System.IO;
 using System.Text.Json;
+using YamlDotNet.RepresentationModel;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace GitGudModsListLoader.Services;
 
@@ -80,6 +84,35 @@ public class ModsListClient(
 
     public Uri GetCommitArchiveUrl(ProjectId projectId, Sha1 commit) =>
         new(new Uri(options.Value.Host), $"api/v4/projects/{projectId}/repository/archive.zip?sha={commit}");
+
+    public async Task<YamlStream?> GetYamlAsync(
+        ProjectId projectId,
+        string path,
+        string branch = "HEAD",
+        CancellationToken cancellationToken = default)
+    {
+        var files = client.GetRepository(projectId).Files;
+
+        if (await files.FileExistsAsync(path, branch, cancellationToken))
+        {
+            var yamlStream = new YamlStream();
+            Task ParseYaml(Stream stream)
+            {
+                yamlStream.Load(new StreamReader(stream));
+                return Task.CompletedTask;
+            }
+
+            await files.GetRawAsync(
+                    path,
+                    ParseYaml,
+                    new() { Ref = branch },
+                    cancellationToken);
+
+            return yamlStream;
+        }
+
+        return null;
+    }
 
     public async Task<IEnumerable<ModInfo>> GetModsDbAsync(CancellationToken cancellationToken)
     {

@@ -6,7 +6,6 @@ using System.Security.Claims;
 
 namespace GitGudModsListLoader.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("[controller]/[action]")]
 public class ModsListController(
@@ -22,6 +21,7 @@ public class ModsListController(
         return modsList;
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult> Update(CancellationToken token)
     {
@@ -44,6 +44,7 @@ public class ModsListController(
         return Ok();
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult> UpdateAll(CancellationToken token)
     {
