@@ -2,6 +2,7 @@
 
 public record ModInfo(
     int Id,
+    string Url,
     long ProjectId,
     IEnumerable<string> Titles,
     string PackageType,

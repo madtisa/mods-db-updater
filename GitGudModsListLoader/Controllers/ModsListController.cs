@@ -6,6 +6,7 @@ using System.Security.Claims;
 
 namespace GitGudModsListLoader.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("[controller]/[action]")]
 public class ModsListController(
@@ -14,14 +15,25 @@ public class ModsListController(
     IModsListService modsListService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IEnumerable<ModInfo>> Get(CancellationToken token)
+    public async Task<ActionResult<ModInfo>> Get(CancellationToken token)
     {
-        // TODO: Get only appropriate project (use project id from claims)
-        var modsList = await modsListService.GetAllAsync(token);
-        return modsList;
+        // TODO: Create auth policy?
+        string? projectIdText = User.FindFirstValue("project_id");
+        if (projectIdText is null || long.TryParse(projectIdText, out var projectId))
+        {
+            logger.LogError("Project id is invalid or missing in claims: '{ProjectId}'", projectIdText);
+            return Forbid();
+        }
+
+        ModInfo? modInfo = await modsListService.GetAsync(projectId, token);
+        if (modInfo is null)
+        {
+            return NotFound(new { projectId });
+        }
+
+        return Ok(modInfo);
     }
 
-    [Authorize]
     [HttpPost]
     public async Task<ActionResult> Update(CancellationToken token)
     {
@@ -44,7 +56,6 @@ public class ModsListController(
         return Ok();
     }
 
-    [Authorize]
     [HttpPost]
     public async Task<ActionResult> UpdateAll(CancellationToken token)
     {
@@ -57,6 +68,7 @@ public class ModsListController(
         }
 
         await modsListService.UpdateAllAsync(token);
+
         return Ok();
     }
 }

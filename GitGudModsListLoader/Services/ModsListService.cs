@@ -159,6 +159,9 @@ public class ModsListService(
 
         generalSection.Remove("author", out var author);
 
+        generalSection.Remove("url", out var url);
+        url ??= projectDetails.WebUrl;
+
         var versionResolver = versionResolverRepository.Get(packageType);
         var versions = await versionResolver
             .ResolveAsync(info.ProjectId)
@@ -166,6 +169,7 @@ public class ModsListService(
 
         return new ModInfo(
             info.Id,
+            url,
             info.ProjectId,
             titles,
             packageType,
