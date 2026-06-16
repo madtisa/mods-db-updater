@@ -1,3 +1,4 @@
+using GitGudModsListLoader.Models;
 using GitGudModsListLoader.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,11 +7,12 @@ using System.Security.Claims;
 
 namespace GitGudModsListLoader.Controllers;
 
-[Authorize]
+// TODO: Add categories controller.
+
 [ApiController]
-[Route("[controller]/[action]")]
-public class ModsListController(
-    ILogger<ModsListController> logger,
+[Route("mods")]
+public class ModsController(
+    ILogger<ModsController> logger,
     IModsListService modsListService) : ControllerBase
 {
     [HttpGet]
@@ -19,7 +21,7 @@ public class ModsListController(
         return modsListService.ListAsync();
     }
 
-    [HttpGet]
+    [HttpGet("{projectId}")]
     public async Task<ActionResult<ModDto>> Get(
         [Range(1, int.MaxValue)] long projectId,
         CancellationToken token)
@@ -33,7 +35,9 @@ public class ModsListController(
         return Ok(mod);
     }
 
-    [HttpPost]
+    [Authorize]
+    // TODO: pass projectId and authorize via token.
+    [HttpPost("update")]
     public async Task<ActionResult> Update(CancellationToken token)
     {
         // TODO: Move to policy.
@@ -56,20 +60,10 @@ public class ModsListController(
         return Ok();
     }
 
-    // TODO: Move to background worker or allow only to admin.
-    //[HttpPost]
-    //public async Task<ActionResult> UpdateAll(CancellationToken token)
-    //{
-    //    string? projectId = User.FindFirstValue("project_id");
-    //    string authorizedProjectId = gitLabOptions.Value.ModsList.ProjectId.ToString();
-    //    if (projectId is null || !projectId.Equals(authorizedProjectId, StringComparison.Ordinal))
-    //    {
-    //        logger.LogError("Project id '{ProjectId}' is not allowed", projectId);
-    //        return Forbid();
-    //    }
-
-    //    await modsListService.UpdateAsync(projectId, token);
-
-    //    return Ok();
-    //}
+    [HttpPost]
+    public async Task<ActionResult> Add([FromBody] AddModRequest request, CancellationToken token)
+    {
+        await modsListService.AddAsync(request, token);
+        return Ok();
+    }
 }

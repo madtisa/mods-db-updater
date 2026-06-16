@@ -52,6 +52,12 @@ builder.Services.AddAuthentication()
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddDbContext<ModsDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("Mods"));
@@ -60,10 +66,14 @@ builder.Services.AddDbContext<ModsDbContext>(options =>
 builder.Services.AddScoped<IGitLabClient>(provider =>
 {
     var options = provider.GetRequiredService<IOptions<GitLabOptions>>().Value;
-    return new GitLabClient(
+    var client = new GitLabClient(
             options.Host,
             options.ApiToken,
-            new RequestOptions(options.RetryCount, options.RetryInterval));
+            new RequestOptions(options.RetryCount, options.RetryInterval)
+            {
+                HttpClientTimeout = TimeSpan.FromSeconds(10),
+            });
+    return client;
 });
 builder.Services.AddScoped<IModsListClient, ModsListClient>();
 
@@ -76,11 +86,29 @@ builder.Services.AddScoped<IVersionResolverRepository, VersionResolverRepository
 builder.Services.AddScoped<IModsScrubber, GitGudModsScrubber>();
 builder.Services.AddScoped<IModsListService, ModsListService>();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
+{
+    app.UseExceptionHandler();
+}
 
 app.UseAuthorization();
 
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
 app.MapControllers();
+
+app.MapSwagger();
+app.MapSwaggerUI();
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetRequiredService<ModsDbContext>();
