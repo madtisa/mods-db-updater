@@ -10,262 +10,261 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace GitGudModsListLoader.Migrations
+namespace GitGudModsListLoader.Migrations;
+
+[DbContext(typeof(ModsDbContext))]
+[Migration("20260616101708_Initial")]
+partial class Initial
 {
-    [DbContext(typeof(ModsDbContext))]
-    [Migration("20260616101708_Initial")]
-    partial class Initial
+    /// <inheritdoc />
+    protected override void BuildTargetModel(ModelBuilder modelBuilder)
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.9")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+        modelBuilder
+            .HasAnnotation("ProductVersion", "10.0.9")
+            .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "hstore");
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+        NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "hstore");
+        NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.Category", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.Category", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<int>("Order")
-                        .HasColumnType("integer");
+                b.Property<int>("Order")
+                    .HasColumnType("integer");
 
-                    b.Property<int?>("ParentId")
-                        .HasColumnType("integer");
+                b.Property<int?>("ParentId")
+                    .HasColumnType("integer");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("Name")
-                        .IsUnique();
+                b.HasIndex("Name")
+                    .IsUnique();
 
-                    b.HasIndex("ParentId");
+                b.HasIndex("ParentId");
 
-                    b.ToTable("Category");
-                });
+                b.ToTable("Category");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.Mod", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.Mod", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Author")
-                        .HasColumnType("text");
+                b.Property<string>("Author")
+                    .HasColumnType("text");
 
-                    b.Property<Dictionary<string, string>>("Metadata")
-                        .IsRequired()
-                        .HasColumnType("hstore");
+                b.Property<Dictionary<string, string>>("Metadata")
+                    .IsRequired()
+                    .HasColumnType("hstore");
 
-                    b.Property<string>("MetadataPath")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("MetadataPath")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<string>("PackageType")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("PackageType")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.Property<string>("PreviewUrl")
-                        .HasColumnType("text");
+                b.Property<string>("PreviewUrl")
+                    .HasColumnType("text");
 
-                    b.Property<long>("ProjectId")
-                        .HasColumnType("bigint");
+                b.Property<long>("ProjectId")
+                    .HasColumnType("bigint");
 
-                    b.Property<int>("Stars")
-                        .HasColumnType("integer");
+                b.Property<int>("Stars")
+                    .HasColumnType("integer");
 
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("Url")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Mods");
-                });
+                b.ToTable("Mods");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModDependency", b =>
-                {
-                    b.Property<int>("ModId")
-                        .HasColumnType("integer");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModDependency", b =>
+            {
+                b.Property<int>("ModId")
+                    .HasColumnType("integer");
 
-                    b.Property<int>("DependencyModId")
-                        .HasColumnType("integer");
+                b.Property<int>("DependencyModId")
+                    .HasColumnType("integer");
 
-                    b.HasKey("ModId", "DependencyModId");
+                b.HasKey("ModId", "DependencyModId");
 
-                    b.HasIndex("DependencyModId");
+                b.HasIndex("DependencyModId");
 
-                    b.ToTable("ModDependency");
-                });
+                b.ToTable("ModDependency");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModTitle", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModTitle", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ModId")
-                        .HasColumnType("integer");
+                b.Property<int>("ModId")
+                    .HasColumnType("integer");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("Title")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("ModId", "Title")
-                        .IsUnique();
+                b.HasIndex("ModId", "Title")
+                    .IsUnique();
 
-                    b.ToTable("ModTitle");
-                });
+                b.ToTable("ModTitle");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModToCategory", b =>
-                {
-                    b.Property<int>("ModId")
-                        .HasColumnType("integer");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModToCategory", b =>
+            {
+                b.Property<int>("ModId")
+                    .HasColumnType("integer");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("integer");
+                b.Property<int>("CategoryId")
+                    .HasColumnType("integer");
 
-                    b.HasKey("ModId", "CategoryId");
+                b.HasKey("ModId", "CategoryId");
 
-                    b.HasIndex("CategoryId");
+                b.HasIndex("CategoryId");
 
-                    b.ToTable("ModToCategory");
-                });
+                b.ToTable("ModToCategory");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModVersion", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModVersion", b =>
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                b.Property<DateTime>("CreatedAt")
+                    .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("ModId")
-                        .HasColumnType("integer");
+                b.Property<int>("ModId")
+                    .HasColumnType("integer");
 
-                    b.PrimitiveCollection<string[]>("Urls")
-                        .IsRequired()
-                        .HasColumnType("text[]");
+                b.PrimitiveCollection<string[]>("Urls")
+                    .IsRequired()
+                    .HasColumnType("text[]");
 
-                    b.Property<string>("Version")
-                        .IsRequired()
-                        .HasColumnType("text");
+                b.Property<string>("Version")
+                    .IsRequired()
+                    .HasColumnType("text");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.HasIndex("ModId", "Version")
-                        .IsUnique();
+                b.HasIndex("ModId", "Version")
+                    .IsUnique();
 
-                    b.ToTable("ModVersion");
-                });
+                b.ToTable("ModVersion");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.Category", b =>
-                {
-                    b.HasOne("GitGudModsListLoader.Persistence.Category", "Parent")
-                        .WithMany()
-                        .HasForeignKey("ParentId");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.Category", b =>
+            {
+                b.HasOne("GitGudModsListLoader.Persistence.Category", "Parent")
+                    .WithMany()
+                    .HasForeignKey("ParentId");
 
-                    b.Navigation("Parent");
-                });
+                b.Navigation("Parent");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModDependency", b =>
-                {
-                    b.HasOne("GitGudModsListLoader.Persistence.Mod", "DependencyMod")
-                        .WithMany("RequiredBy")
-                        .HasForeignKey("DependencyModId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModDependency", b =>
+            {
+                b.HasOne("GitGudModsListLoader.Persistence.Mod", "DependencyMod")
+                    .WithMany("RequiredBy")
+                    .HasForeignKey("DependencyModId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
 
-                    b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
-                        .WithMany("Dependencies")
-                        .HasForeignKey("ModId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
+                    .WithMany("Dependencies")
+                    .HasForeignKey("ModId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("DependencyMod");
+                b.Navigation("DependencyMod");
 
-                    b.Navigation("Mod");
-                });
+                b.Navigation("Mod");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModTitle", b =>
-                {
-                    b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
-                        .WithMany("Titles")
-                        .HasForeignKey("ModId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModTitle", b =>
+            {
+                b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
+                    .WithMany("Titles")
+                    .HasForeignKey("ModId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("Mod");
-                });
+                b.Navigation("Mod");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModToCategory", b =>
-                {
-                    b.HasOne("GitGudModsListLoader.Persistence.Category", "Category")
-                        .WithMany("ModCategories")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModToCategory", b =>
+            {
+                b.HasOne("GitGudModsListLoader.Persistence.Category", "Category")
+                    .WithMany("ModCategories")
+                    .HasForeignKey("CategoryId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
-                        .WithMany("ModCategories")
-                        .HasForeignKey("ModId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
+                    .WithMany("ModCategories")
+                    .HasForeignKey("ModId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("Category");
+                b.Navigation("Category");
 
-                    b.Navigation("Mod");
-                });
+                b.Navigation("Mod");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.ModVersion", b =>
-                {
-                    b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
-                        .WithMany("Versions")
-                        .HasForeignKey("ModId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.ModVersion", b =>
+            {
+                b.HasOne("GitGudModsListLoader.Persistence.Mod", "Mod")
+                    .WithMany("Versions")
+                    .HasForeignKey("ModId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("Mod");
-                });
+                b.Navigation("Mod");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.Category", b =>
-                {
-                    b.Navigation("ModCategories");
-                });
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.Category", b =>
+            {
+                b.Navigation("ModCategories");
+            });
 
-            modelBuilder.Entity("GitGudModsListLoader.Persistence.Mod", b =>
-                {
-                    b.Navigation("Dependencies");
+        modelBuilder.Entity("GitGudModsListLoader.Persistence.Mod", b =>
+            {
+                b.Navigation("Dependencies");
 
-                    b.Navigation("ModCategories");
+                b.Navigation("ModCategories");
 
-                    b.Navigation("RequiredBy");
+                b.Navigation("RequiredBy");
 
-                    b.Navigation("Titles");
+                b.Navigation("Titles");
 
-                    b.Navigation("Versions");
-                });
+                b.Navigation("Versions");
+            });
 #pragma warning restore 612, 618
-        }
     }
 }
