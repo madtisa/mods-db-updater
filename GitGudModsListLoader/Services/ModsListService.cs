@@ -1,184 +1,54 @@
 ﻿using GitGudModsListLoader.Models;
-using GitGudModsListLoader.Services.VersionResolver;
-using NGitLab.Models;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using YamlDotNet.RepresentationModel;
+using GitGudModsListLoader.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace GitGudModsListLoader.Services;
 
-public class ModsListService(
-    IModsListClient client,
-    IVersionResolverRepository versionResolverRepository) : IModsListService
+public class ModsListService(ILogger<ModsListService> logger, IModsScrubber modsScrubber, ModsDbContext context) : IModsListService
 {
     public async Task UpdateAsync(long projectId, CancellationToken token)
     {
-        ModInfo modInfo = await GetAsync(projectId, token)
-            ?? throw new ProjectNotFoundException(projectId);
+        var mod = await context.Mods
+            .FirstOrDefaultAsync(mod => mod.ProjectId == projectId, token);
 
-        IEnumerable<ModInfo> modsDb = await client.GetModsDbAsync(token);
-        Dictionary<int, ModInfo> modsDbMap = modsDb.ToDictionary(mod => mod.Id);
-
-        modsDbMap[modInfo.Id] = modInfo;
-
-        var updatedModsDb = modsDbMap.Values.OrderBy(mod => mod.Id);
-        await client.UpdateModsDbAsync(updatedModsDb, token);
-    }
-
-    public async Task UpdateAllAsync(CancellationToken token)
-    {
-        IEnumerable<ModInfo> modsDb = await GetAllAsync(token);
-        await client.UpdateModsDbAsync(modsDb, token);
-    }
-
-    public async Task<ModInfo?> GetAsync(long projectId, CancellationToken token)
-    {
-        ModsListInfo modsList = await client.GetModsListAsync(token);
-
-        var mod = modsList.Mods.FirstOrDefault(mod => mod.ProjectId == projectId);
         if (mod is null)
         {
-            return null;
+            logger.LogWarning("Mod for project {projectId} is missing", projectId);
+            return;
         }
 
-        return await GetModDataAsync(mod, token);
+        var scrubModRequest = new ScrubModRequest(mod.ProjectId, mod.Titles.FirstOrDefault()?.Title, mod.MetadataPath);
+        ModDto updatedMod = await modsScrubber.ScrubModDataAsync(scrubModRequest, token);
+
+        mod.Apply(updatedMod);
+
+        await context.SaveChangesAsync(token);
     }
 
-    public async Task<IEnumerable<ModInfo>> GetAllAsync(CancellationToken token)
+    public Task<ModDto?> GetAsync(long projectId, CancellationToken token) =>
+        context.Mods
+            .AsNoTracking()
+            .Select(ModDto.FromEntity)
+            .FirstOrDefaultAsync(mod => mod.ProjectId == projectId, token);
+
+    public IAsyncEnumerable<ModDto> ListAsync() =>
+        context.Mods
+            .AsNoTracking()
+            .Select(ModDto.FromEntity)
+            .AsAsyncEnumerable();
+
+    public async Task AddAsync(AddModRequest request, CancellationToken token)
     {
-        ModsListInfo modsList = await client.GetModsListAsync(token);
-
-        // TODO: Move throttling number to config.
-        var throttle = new SemaphoreSlim(6);
-
-        var query = modsList.Mods
-            .Select(async (mod) =>
-            {
-                await throttle.WaitAsync(token);
-
-                try
-                {
-                    return await GetModDataAsync(mod, token);
-                }
-                finally
-                {
-                    throttle.Release();
-                }
-            })
-            .ToList();
-
-        return await Task.WhenAll(query);
-    }
-
-    private record struct WorkflowTitles(string? DisplayedModName, string? ModName);
-
-    private async Task<WorkflowTitles> GetWorkflowTitlesAsync(ProjectId projectId, CancellationToken token)
-    {
-        YamlStream? workflow = await client.GetYamlAsync(projectId, ".gitlab-ci.yml", cancellationToken: token);
-        if (workflow is null || workflow.Documents.Count <= 0)
+        if (await context.Mods.AsNoTracking().AnyAsync(mod => mod.ProjectId == request.ProjectId, token))
         {
-            return default;
+            throw new ModAlreadyExistsException(request.ProjectId);
         }
 
-        var workflowRoot = (YamlMappingNode)workflow.Documents[0].RootNode;
-        if (!workflowRoot.Children.TryGetValue("variables", out var workflowVariablesNode))
-        {
-            return default;
-        }
+        var scrubModRequest = new ScrubModRequest(request.ProjectId, request.Title, request.MetadataPath);
+        ModDto mod = await modsScrubber.ScrubModDataAsync(scrubModRequest, token);
 
-        var variablesMapping = (YamlMappingNode)workflowVariablesNode;
-        WorkflowTitles titles = default;
+        context.Mods.Add(mod.ToEntity());
 
-        if (
-            variablesMapping.Children.TryGetValue("DISPLAYED_MOD_NAME", out var displayedModName) &&
-            displayedModName is not null)
-        {
-            titles.DisplayedModName = displayedModName.ToString();
-        }
-
-        if (
-            variablesMapping.Children.TryGetValue("MOD_NAME", out var modName) &&
-            modName is not null)
-        {
-            titles.ModName = modName.ToString();
-        }
-
-        return titles;
-    }
-
-    private async Task<ModInfo> GetModDataAsync(ModShortInfo info, CancellationToken token)
-    {
-        var workflowTitlesTask = GetWorkflowTitlesAsync(info.ProjectId, token);
-        Project projectDetails = await client.GetProjectInfoAsync(info.ProjectId, token);
-
-        var metadata = await client.GetModMetadataAsync(info.ProjectId, info.MetadataPath, token);
-        var generalSection = metadata["General"]
-            ?? throw new FormatException("Missing general section in metadata file");
-
-        if (!metadata.TryGetValue("Plugins", out var pluginsSection)
-            || !pluginsSection.TryGetValue("GitGud\\packageType", out var packageType)
-            || string.IsNullOrWhiteSpace(packageType))
-        {
-            packageType = "mod-package";
-        }
-
-        HashSet<string> addedTitles = new(4, StringComparer.OrdinalIgnoreCase);
-        List<string> titles = new(4);
-        void AddTitle(string? title)
-        {
-            if (string.IsNullOrWhiteSpace(title) || !addedTitles.Add(title))
-            {
-                return;
-            }
-
-            titles.Add(title);
-        }
-
-        var workflowTitles = await workflowTitlesTask;
-        AddTitle(workflowTitles.DisplayedModName);
-
-        generalSection.Remove("modName", out var title);
-        AddTitle(title);
-
-        AddTitle(info.Title);
-
-        AddTitle(workflowTitles.ModName);
-
-        generalSection.Remove("pictureUrl", out var previewUrl);
-        previewUrl ??= projectDetails.AvatarUrl;
-
-        generalSection.Remove("category", out var rawCategories);
-        var modCategories = rawCategories is null
-            ? []
-            : rawCategories.Trim('"').Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse);
-
-        generalSection.Remove("dependencies", out var rawDependencies);
-        var modDependencies = rawDependencies is null
-            ? []
-            : rawDependencies.Trim('"').Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse);
-
-        generalSection.Remove("author", out var author);
-
-        generalSection.Remove("url", out var url);
-        url ??= projectDetails.WebUrl;
-
-        var versionResolver = versionResolverRepository.Get(packageType);
-        var versions = await versionResolver
-            .ResolveAsync(info.ProjectId)
-            .ToListAsync(token);
-
-        return new ModInfo(
-            info.Id,
-            url,
-            info.ProjectId,
-            titles,
-            packageType,
-            projectDetails.StarCount,
-            modCategories,
-            modDependencies,
-            previewUrl,
-            author,
-            generalSection,
-            versions);
+        await context.SaveChangesAsync(token);
     }
 }

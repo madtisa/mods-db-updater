@@ -1,10 +1,14 @@
-﻿
+﻿using GitGudModsListLoader.Models;
+
 namespace GitGudModsListLoader.Services;
 
 public interface IModsListService
 {
-    Task<ModInfo?> GetAsync(long projectId, CancellationToken token);
-    Task<IEnumerable<ModInfo>> GetAllAsync(CancellationToken token);
+    IAsyncEnumerable<ModDto> ListAsync();
+    
+    Task<ModDto?> GetAsync(long projectId, CancellationToken token);
+    
+    Task AddAsync(AddModRequest request, CancellationToken token);
+    
     Task UpdateAsync(long projectId, CancellationToken token);
-    Task UpdateAllAsync(CancellationToken token);
 }

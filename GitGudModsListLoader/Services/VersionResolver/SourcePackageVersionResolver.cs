@@ -6,11 +6,11 @@ public class SourcePackageVersionResolver(IModsListClient client) : IVersionReso
 {
     public string PackageType => "source-package";
 
-    public IAsyncEnumerable<ModVersionInfo> ResolveAsync(ProjectId projectId)
+    public IAsyncEnumerable<ModVersionDto> ResolveAsync(ProjectId projectId)
     {
         return client.GetProjectReleasesAsync(projectId)
             .Select(release =>
-                new ModVersionInfo(
+                new ModVersionDto(
                     release.TagName,
                     release.Commit.CommittedDate,
                     [client.GetCommitArchiveUrl(projectId, release.Commit.Id).ToString()]));

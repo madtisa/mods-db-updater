@@ -6,14 +6,14 @@ public class ModPackageVersionResolver(IModsListClient client) : IVersionResolve
 {
     public string PackageType => "mod-package";
 
-    public IAsyncEnumerable<ModVersionInfo> ResolveAsync(ProjectId projectId)
+    public IAsyncEnumerable<ModVersionDto> ResolveAsync(ProjectId projectId)
     {
         return client.GetProjectReleasesAsync(projectId)
             .Select(release =>
-                new ModVersionInfo(
+                new ModVersionDto(
                     release.TagName,
                     release.Commit.CommittedDate,
-                    [..release.Assets.Links
+                    [.. release.Assets.Links
                         // TODO: Add status of version ("invalid" when unable to parse)
                         .Where(link =>
                             link.LinkType == ReleaseLinkType.Package

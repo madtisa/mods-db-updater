@@ -6,11 +6,11 @@ public class SourceRepositoryVersionResolver(IModsListClient client) : IVersionR
 {
     public string PackageType => "source-repository";
 
-    public IAsyncEnumerable<ModVersionInfo> ResolveAsync(ProjectId projectId)
+    public IAsyncEnumerable<ModVersionDto> ResolveAsync(ProjectId projectId)
     {
         return client.GetProjectTagsAsync(projectId)
             .Select(tag =>
-                new ModVersionInfo(
+                new ModVersionDto(
                     tag.Name,
                     tag.Commit.CommittedDate,
                     [client.GetCommitArchiveUrl(projectId, tag.Commit.Id).ToString()]));
