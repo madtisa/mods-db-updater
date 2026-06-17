@@ -4,5 +4,5 @@ namespace GitGudModsListLoader.Services;
 
 public interface IModsScrubber
 {
-    Task<ModDto> ScrubModDataAsync(ScrubModRequest info, CancellationToken token);
+    Task<ModDetailsDto> ScrubModDataAsync(ScrubModRequest info, CancellationToken token);
 }

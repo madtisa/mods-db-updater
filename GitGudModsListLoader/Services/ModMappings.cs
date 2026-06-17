@@ -11,7 +11,7 @@ public static class ModMappings
         ["source-package"] = PackageType.SourcePackage
     };
 
-    public static void Apply(this Mod mod, ModDto dto)
+    public static void Apply(this Mod mod, ModDetailsDto dto)
     {
         mod.Url = dto.Url;
         mod.ProjectId = dto.ProjectId;

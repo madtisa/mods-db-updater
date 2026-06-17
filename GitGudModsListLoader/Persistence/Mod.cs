@@ -1,5 +1,8 @@
-﻿namespace GitGudModsListLoader.Persistence;
+﻿using Microsoft.EntityFrameworkCore;
 
+namespace GitGudModsListLoader.Persistence;
+
+[Index(nameof(ProjectId), IsUnique = true)]
 public class Mod
 {
     public int Id { get; set; }

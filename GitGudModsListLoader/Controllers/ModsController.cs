@@ -8,38 +8,54 @@ using System.Security.Claims;
 namespace GitGudModsListLoader.Controllers;
 
 // TODO: Add categories controller.
-
+// TODO: Add versions controller.
 [ApiController]
 [Route("mods")]
 public class ModsController(
     ILogger<ModsController> logger,
     IModsListService modsListService) : ControllerBase
 {
+    /// <summary>
+    /// List all mods
+    /// </summary>
+    /// <returns>Basic info about all mods</returns>
     [HttpGet]
-    public IAsyncEnumerable<ModDto> List()
+    public IAsyncEnumerable<ModListItemDto> List()
     {
         return modsListService.ListAsync();
     }
 
-    [HttpGet("{projectId}")]
-    public async Task<ActionResult<ModDto>> Get(
-        [Range(1, int.MaxValue)] long projectId,
+    /// <summary>
+    /// Get mod details
+    /// </summary>
+    /// <param name="id">Mod ID</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>Mod details</returns>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<ModDetailsDto>> Get(
+        [Range(1, int.MaxValue)] int id,
         CancellationToken token)
     {
-        ModDto? mod = await modsListService.GetAsync(projectId, token);
+        ModDetailsDto? mod = await modsListService.GetAsync(id, token);
         if (mod is null)
         {
-            return NotFound(new { projectId });
+            return NotFound(new { id });
         }
 
         return Ok(mod);
     }
 
+    /// <summary>
+    /// Update mod details from gitgud.
+    /// </summary>
+    /// <param name="id">Mod ID</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>200 - if succeded</returns>
     [Authorize]
-    // TODO: pass projectId and authorize via token.
-    [HttpPost("update")]
-    public async Task<ActionResult> Update(CancellationToken token)
+    [HttpPost("{id}/update")]
+    public async Task<ActionResult> Update(int id, CancellationToken token)
     {
+        // TODO: Use access token and check ownership or just hardcode password for now
         // TODO: Move to policy.
         string? projectIdText = User.FindFirstValue("project_id");
         if (projectIdText is null || long.TryParse(projectIdText, out var projectId))
@@ -50,7 +66,7 @@ public class ModsController(
 
         try
         {
-            await modsListService.UpdateAsync(projectId, token);
+            await modsListService.UpdateAsync(id, token);
         }
         catch (ProjectNotFoundException)
         {
@@ -60,10 +76,32 @@ public class ModsController(
         return Ok();
     }
 
+    /// <summary>
+    /// Add new mod and fetch its gitgud details
+    /// </summary>
+    /// <param name="request">New mod info to fetch from gitgud</param>
+    /// <param name="token">Cancellation token</param>
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult> Add([FromBody] AddModRequest request, CancellationToken token)
     {
-        await modsListService.AddAsync(request, token);
-        return Ok();
+        await modsListService.AddAsync(null, request, token);
+        return Created();
+    }
+
+    /// <summary>
+    /// Add new mod with specific id and fetch its gitgud details
+    /// </summary>
+    /// <param name="request">New mod info to fetch from gitgud</param>
+    /// <param name="token">Cancellation token</param>
+    [Authorize]
+    [HttpPost("{id}")]
+    public async Task<ActionResult> Add(
+        [FromRoute] int id,
+        [FromBody] AddModRequest request,
+        CancellationToken token)
+    {
+        await modsListService.AddAsync(id, request, token);
+        return Created();
     }
 }

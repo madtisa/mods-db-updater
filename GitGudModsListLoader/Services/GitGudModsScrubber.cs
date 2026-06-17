@@ -5,11 +5,21 @@ using YamlDotNet.RepresentationModel;
 
 namespace GitGudModsListLoader.Services;
 
+/// <summary>
+/// Scrubs mod details from gitgud project
+/// </summary>
 public class GitGudModsScrubber(IModsListClient client, IVersionResolverRepository versionResolverRepository) : IModsScrubber
 {
     private record struct WorkflowTitles(string? DisplayedModName, string? ModName);
 
-    public async Task<ModDto> ScrubModDataAsync(ScrubModRequest info, CancellationToken token)
+    /// <summary>
+    /// Scrubs mod details from gitgud project
+    /// </summary>
+    /// <param name="info">Information about gitgud project</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>Mod details</returns>
+    /// <exception cref="FormatException">Metadata has invalid format</exception>
+    public async Task<ModDetailsDto> ScrubModDataAsync(ScrubModRequest info, CancellationToken token)
     {
         var workflowTitlesTask = GetWorkflowTitlesAsync(info.ProjectId, token);
         Project projectDetails = await client.GetProjectInfoAsync(info.ProjectId, token);
@@ -70,7 +80,8 @@ public class GitGudModsScrubber(IModsListClient client, IVersionResolverReposito
             .ResolveAsync(info.ProjectId)
             .ToListAsync(token);
 
-        return new ModDto(
+        return new ModDetailsDto(
+            default,
             url,
             info.ProjectId,
             titles,

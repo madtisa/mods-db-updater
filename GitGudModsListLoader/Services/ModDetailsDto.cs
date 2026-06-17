@@ -3,7 +3,8 @@ using System.Linq.Expressions;
 
 namespace GitGudModsListLoader.Services;
 
-public record ModDto(
+public record ModDetailsDto(
+    int Id,
     string Url,
     long ProjectId,
     ICollection<string> Titles,
@@ -17,10 +18,11 @@ public record ModDto(
     Dictionary<string, string> Metadata,
     List<ModVersionDto> Versions)
 {
-    public Mod ToEntity()
+    internal Mod ToEntity()
     {
         return new()
         {
+            Id = Id,
             Author = Author,
             ModCategories = [.. Categories.Select(id => new ModToCategory() { CategoryId = id })],
             Dependencies = [.. Dependencies.Select(id => new ModDependency { DependencyModId = id })],
@@ -36,8 +38,9 @@ public record ModDto(
         };
     }
 
-    public static readonly Expression<Func<Mod, ModDto>> FromEntity = static entity =>
-        new ModDto(
+    internal static readonly Expression<Func<Mod, ModDetailsDto>> FromEntity = static entity =>
+        new ModDetailsDto(
+            entity.Id,
             entity.Url,
             entity.ProjectId,
             entity.Titles.Select(title => title.Title).ToList(),
@@ -52,5 +55,8 @@ public record ModDto(
             entity.Author,
             entity.MetadataPath,
             entity.Metadata,
-            entity.Versions.Select(entity => new ModVersionDto(entity.Version, entity.CreatedAt, entity.Urls)).ToList());
+            entity.Versions
+                .OrderByDescending(entity => entity.CreatedAt)
+                .Select(entity => new ModVersionDto(entity.Version, entity.CreatedAt, entity.Urls))
+                .ToList());
 }

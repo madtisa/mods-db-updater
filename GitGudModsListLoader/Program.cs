@@ -6,9 +6,41 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using NGitLab;
+using Npgsql;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using System.Reflection;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var otel = builder.Services.AddOpenTelemetry();
+
+otel.ConfigureResource(resource => resource.AddService(builder.Environment.ApplicationName));
+
+otel.WithTracing(tracing =>
+{
+    tracing.AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddNpgsql()
+        .AddOtlpExporter();
+});
+
+otel.WithMetrics(metrics =>
+{
+    metrics.AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddNpgsqlInstrumentation()
+        .AddRuntimeInstrumentation()
+        // Metrics provides by ASP.NET Core in .NET 8
+        .AddMeter("Microsoft.AspNetCore.Hosting")
+        .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+        // Metrics provided by System.Net libraries
+        .AddMeter("System.Net.Http")
+        .AddMeter("System.Net.NameResolution")
+        .AddPrometheusExporter();
+});
 
 builder.Configuration.AddEnvironmentVariables();
 if (builder.Environment.IsDevelopment())
@@ -53,7 +85,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => options.IncludeXmlComments(Assembly.GetExecutingAssembly()));
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -71,7 +103,7 @@ builder.Services.AddScoped<IGitLabClient>(provider =>
             options.ApiToken,
             new RequestOptions(options.RetryCount, options.RetryInterval)
             {
-                HttpClientTimeout = TimeSpan.FromSeconds(10),
+                HttpClientTimeout = options.Timeout,
             });
     return client;
 });

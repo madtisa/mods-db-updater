@@ -2,7 +2,7 @@
 
 namespace GitGudModsListLoader.Persistence;
 
-[Index(nameof(ModId), nameof(Title), IsUnique = true)]
+[Index(nameof(Title), IsUnique = true)]
 public class ModTitle
 {
     public int Id { get; set; }
