@@ -1,4 +1,5 @@
-﻿using GitGudModsListLoader.Models;
+﻿using GitGudModsListLoader.Exceptions;
+using GitGudModsListLoader.Models;
 using GitGudModsListLoader.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,9 +7,13 @@ namespace GitGudModsListLoader.Services;
 
 public class ModsListService(ILogger<ModsListService> logger, IModsScrubber modsScrubber, ModsDbContext context) : IModsListService
 {
-    public async Task UpdateAsync(int id, CancellationToken token)
+    public async Task ReloadAsync(int id, CancellationToken token)
     {
         var mod = await context.Mods
+            .Include(mod => mod.Titles)
+            .Include(mod => mod.Versions)
+            .Include(mod => mod.ModCategories)
+            .Include(mod => mod.Dependencies)
             .FirstOrDefaultAsync(mod => mod.Id == id, token);
 
         if (mod is null)
@@ -17,6 +22,30 @@ public class ModsListService(ILogger<ModsListService> logger, IModsScrubber mods
             return;
         }
 
+        await ReloadModAsync(mod, token);
+    }
+
+
+    public async Task ReloadProjectAsync(long projectId, CancellationToken token)
+    {
+        var mod = await context.Mods
+            .Include(mod => mod.Titles)
+            .Include(mod => mod.Versions)
+            .Include(mod => mod.ModCategories)
+            .Include(mod => mod.Dependencies)
+            .FirstOrDefaultAsync(mod => mod.ProjectId == projectId, token);
+
+        if (mod is null)
+        {
+            logger.LogWarning("Mod for project {projectId} is missing", projectId);
+            return;
+        }
+
+        await ReloadModAsync(mod, token);
+    }
+
+    private async Task ReloadModAsync(Mod mod, CancellationToken token)
+    {
         var scrubModRequest = new ScrubModRequest(mod.ProjectId, mod.Titles.FirstOrDefault()?.Title, mod.MetadataPath);
         ModDetailsDto updatedMod = await modsScrubber.ScrubModDataAsync(scrubModRequest, token);
 

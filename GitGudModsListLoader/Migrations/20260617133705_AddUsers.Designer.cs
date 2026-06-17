@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using GitGudModsListLoader.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GitGudModsListLoader.Migrations
 {
     [DbContext(typeof(ModsDbContext))]
-    partial class ModsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260617133705_AddUsers")]
+    partial class AddUsers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -560,14 +563,6 @@ namespace GitGudModsListLoader.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = -1,
-                            ExternalId = 36695,
-                            Role = 128
-                        });
                 });
 
             modelBuilder.Entity("GitGudModsListLoader.Persistence.Category", b =>

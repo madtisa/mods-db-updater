@@ -1,4 +1,4 @@
-﻿namespace GitGudModsListLoader.Services;
+﻿namespace GitGudModsListLoader.Exceptions;
 
 [Serializable]
 public class ProjectNotFoundException : Exception

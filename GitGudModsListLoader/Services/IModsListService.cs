@@ -9,6 +9,8 @@ public interface IModsListService
     Task<ModDetailsDto?> GetAsync(int id, CancellationToken token);
     
     Task AddAsync(int? id, AddModRequest request, CancellationToken token);
-    
-    Task UpdateAsync(int id, CancellationToken token);
+
+    Task ReloadAsync(int id, CancellationToken token);
+
+    Task ReloadProjectAsync(long projectId, CancellationToken token);
 }

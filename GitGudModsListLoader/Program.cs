@@ -1,10 +1,14 @@
-using GitGudModsListLoader;
+using GitGudModsListLoader.Auth;
+using GitGudModsListLoader.Exceptions;
 using GitGudModsListLoader.Persistence;
 using GitGudModsListLoader.Services;
 using GitGudModsListLoader.Services.VersionResolver;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.OpenApi;
 using NGitLab;
 using Npgsql;
 using OpenTelemetry.Metrics;
@@ -12,6 +16,8 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Reflection;
 using System.Security.Claims;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,8 +65,22 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder.Services.AddAuthentication()
-    .AddJwtBearer((options) =>
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultScheme = "Combined";
+        options.DefaultChallengeScheme = "Combined";
+    })
+    .AddPolicyScheme("Combined", null, options =>
+    {
+        options.ForwardDefaultSelector = context =>
+        {
+            return context.Request.Headers.ContainsKey(GitLabAuthenticationHandler.AuthenticationHeader)
+                ? "GitLab"
+                : "Jwt";
+        };
+    })
+    .AddJwtBearer("Jwt", (options) =>
     {
         options.Authority = gitLabOptions.Host;
         options.Audience = gitLabOptions.Audience;
@@ -79,13 +99,42 @@ builder.Services.AddAuthentication()
                 return Task.CompletedTask;
             }
         };
+    })
+    .AddScheme<AuthenticationSchemeOptions, GitLabAuthenticationHandler>("GitLab", null);
+
+builder.Services
+    .AddAuthorizationBuilder()
+    .AddPolicy("ProjectReloadAccess", policy =>
+    {
+        policy.AddAuthenticationSchemes("Jwt");
+        policy.AddAuthenticationSchemes("GitLab");
+
+        policy.RequireAuthenticatedUser();
+        policy.AddRequirements(new ProjectReloadAccessRequirement());
     });
 
-builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options => options.IncludeXmlComments(Assembly.GetExecutingAssembly()));
+builder.Services.AddSwaggerGen(options =>
+{
+    options.IncludeXmlComments(Assembly.GetExecutingAssembly());
+
+    options.AddSecurityDefinition("GitLab", new OpenApiSecurityScheme
+    {
+        Name = GitLabAuthenticationHandler.AuthenticationHeader,
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Scheme = "GitLab",
+        BearerFormat = "JWT",
+        Description = "Enter GitLab token",
+    });
+
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("GitLab", document)] = []
+    });
+});
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -143,7 +192,7 @@ app.MapSwagger();
 app.MapSwaggerUI();
 
 using var scope = app.Services.CreateScope();
-var db = scope.ServiceProvider.GetRequiredService<ModsDbContext>();
-await db.Database.MigrateAsync();
+var _context = scope.ServiceProvider.GetRequiredService<ModsDbContext>();
+await _context.Database.MigrateAsync();
 
 app.Run();

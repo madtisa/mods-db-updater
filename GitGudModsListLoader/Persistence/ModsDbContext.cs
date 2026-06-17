@@ -6,6 +6,8 @@ public class ModsDbContext(DbContextOptions<ModsDbContext> options) : DbContext(
 {
     public DbSet<Mod> Mods { get; set; }
 
+    public DbSet<User> Users { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ModDependency>()
@@ -25,6 +27,8 @@ public class ModsDbContext(DbContextOptions<ModsDbContext> options) : DbContext(
             .HasConversion<string>();
 
         modelBuilder.Entity<Category>().HasData(GetKnownCategories());
+
+        modelBuilder.Entity<User>().HasData(new User { Id = -1, ExternalId = 36695, Role = Role.Admin });
 
         base.OnModelCreating(modelBuilder);
     }

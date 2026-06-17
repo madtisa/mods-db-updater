@@ -1,4 +1,4 @@
-﻿namespace GitGudModsListLoader.Services;
+﻿namespace GitGudModsListLoader.Exceptions;
 
 public class ModAlreadyExistsException(long projectId)
     : Exception($"Mod for project {projectId} already exists.")

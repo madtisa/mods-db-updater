@@ -1,9 +1,10 @@
+using GitGudModsListLoader.Exceptions;
 using GitGudModsListLoader.Models;
+using GitGudModsListLoader.Persistence;
 using GitGudModsListLoader.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 
 namespace GitGudModsListLoader.Controllers;
 
@@ -11,9 +12,7 @@ namespace GitGudModsListLoader.Controllers;
 // TODO: Add versions controller.
 [ApiController]
 [Route("mods")]
-public class ModsController(
-    ILogger<ModsController> logger,
-    IModsListService modsListService) : ControllerBase
+public class ModsController(IModsListService modsListService) : ControllerBase
 {
     /// <summary>
     /// List all mods
@@ -46,31 +45,22 @@ public class ModsController(
     }
 
     /// <summary>
-    /// Update mod details from gitgud.
+    /// Reload mod details from gitgud.
     /// </summary>
     /// <param name="id">Mod ID</param>
     /// <param name="token">Cancellation token</param>
     /// <returns>200 - if succeded</returns>
-    [Authorize]
-    [HttpPost("{id}/update")]
-    public async Task<ActionResult> Update(int id, CancellationToken token)
+    [Authorize(Roles = "Admin")]
+    [HttpPost("{id}/reload/")]
+    public async Task<ActionResult> Reload(int id, CancellationToken token)
     {
-        // TODO: Use access token and check ownership or just hardcode password for now
-        // TODO: Move to policy.
-        string? projectIdText = User.FindFirstValue("project_id");
-        if (projectIdText is null || long.TryParse(projectIdText, out var projectId))
-        {
-            logger.LogError("Project id is invalid or missing in claims: '{ProjectId}'", projectIdText);
-            return Forbid();
-        }
-
         try
         {
-            await modsListService.UpdateAsync(id, token);
+            await modsListService.ReloadAsync(id, token);
         }
         catch (ProjectNotFoundException)
         {
-            return NotFound(new { projectId });
+            return NotFound(new { id });
         }
 
         return Ok();
@@ -81,7 +71,7 @@ public class ModsController(
     /// </summary>
     /// <param name="request">New mod info to fetch from gitgud</param>
     /// <param name="token">Cancellation token</param>
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<ActionResult> Add([FromBody] AddModRequest request, CancellationToken token)
     {
@@ -92,9 +82,10 @@ public class ModsController(
     /// <summary>
     /// Add new mod with specific id and fetch its gitgud details
     /// </summary>
+    /// <param name="id">Mod ID</param>
     /// <param name="request">New mod info to fetch from gitgud</param>
     /// <param name="token">Cancellation token</param>
-    [Authorize]
+    [Authorize(Roles = "Admin")]
     [HttpPost("{id}")]
     public async Task<ActionResult> Add(
         [FromRoute] int id,
