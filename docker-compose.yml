@@ -1,0 +1,34 @@
+services:
+  gitgudmodslistloader:
+    image: ${DOCKER_REGISTRY-}gitgudmodslistloader
+
+    build:
+      context: .
+      dockerfile: GitGudModsListLoader/Dockerfile
+
+    depends_on:
+      - database
+
+    env_file:
+      - .env
+
+  database:
+    container_name: postgres
+    image: "postgres:18-alpine"
+
+    ports:
+      - 5432:5432
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: gitgud_mods
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    env_file:
+      - .env
+
+    volumes:
+      - postgres:/var/lib/postgresql
+
+volumes:
+  postgres:
