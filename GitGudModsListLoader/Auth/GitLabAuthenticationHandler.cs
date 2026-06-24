@@ -11,24 +11,17 @@ using System.Text.Encodings.Web;
 namespace GitGudModsListLoader.Auth;
 
 // TODO: Replace with OAuth 2.0 in future.
-public sealed class GitLabAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+public sealed class GitLabAuthenticationHandler(
+    IOptionsMonitor<GitLabOptions> gitLabOptions,
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory logger,
+    UrlEncoder encoder,
+    ModsDbContext context) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string AuthenticationHeader = "X-GitLab-Token";
 
-    private readonly IOptionsMonitor<GitLabOptions> _gitLabOptions;
-    private readonly ModsDbContext _context;
-
-    public GitLabAuthenticationHandler(
-        IOptionsMonitor<GitLabOptions> gitLabOptions,
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
-        ILoggerFactory logger,
-        UrlEncoder encoder,
-        ModsDbContext context)
-        : base(options, logger, encoder)
-    {
-        _gitLabOptions = gitLabOptions;
-        _context = context;
-    }
+    private readonly IOptionsMonitor<GitLabOptions> _gitLabOptions = gitLabOptions;
+    private readonly ModsDbContext _context = context;
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {

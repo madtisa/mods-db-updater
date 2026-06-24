@@ -102,6 +102,9 @@ builder.Services
     })
     .AddScheme<AuthenticationSchemeOptions, GitLabAuthenticationHandler>("GitLab", null);
 
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddScoped<IAuthorizationHandler, ProjectReloadAuthorizationHandler>();
+
 builder.Services
     .AddAuthorizationBuilder()
     .AddPolicy("ProjectReloadAccess", policy =>
