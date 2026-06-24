@@ -57,8 +57,9 @@ public class ModsListService(ILogger<ModsListService> logger, IModsScrubber mods
     public Task<ModDetailsDto?> GetAsync(int id, CancellationToken token) =>
         context.Mods
             .AsNoTracking()
+            .Where(mod => mod.Id == id)
             .Select(ModDetailsDto.FromEntity)
-            .FirstOrDefaultAsync(mod => mod.Id == id, token);
+            .FirstOrDefaultAsync(token);
 
     public IAsyncEnumerable<ModListItemDto> ListAsync() =>
         context.Mods
