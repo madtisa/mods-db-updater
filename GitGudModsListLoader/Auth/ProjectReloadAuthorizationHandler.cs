@@ -19,20 +19,20 @@ public sealed class ProjectReloadAuthorizationHandler(IHttpContextAccessor httpC
             return Task.CompletedTask;
         }
 
-        var projectId = httpContext.Request.RouteValues["projectId"]?.ToString();
-        if (string.IsNullOrEmpty(projectId))
+        var requestedProjectId = httpContext.Request.RouteValues["projectId"]?.ToString();
+        if (string.IsNullOrEmpty(requestedProjectId))
         {
             return Task.CompletedTask;
         }
 
-        var claimedProjectId = context.User.FindFirstValue("project_id");
-        if (projectId.Equals(claimedProjectId, StringComparison.Ordinal))
+        var authorizedProjectId = context.User.FindFirstValue("project_id");
+        if (requestedProjectId.Equals(authorizedProjectId, StringComparison.Ordinal))
         {
             context.Succeed(requirement);
         }
         else
         {
-            context.Fail(new AuthorizationFailureReason(this, $"Project id {projectId} is missing in claims"));
+            context.Fail(new AuthorizationFailureReason(this, $"Project ID {requestedProjectId} is not allowed"));
         }
 
         return Task.CompletedTask;

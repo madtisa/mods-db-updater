@@ -96,6 +96,11 @@ builder.Services
                     context.Fail("Project id claim is missing");
                 }
 
+                if (context.Principal?.FindFirstValue("ref_protected") != "true")
+                {
+                    context.Fail($"Ref {context.Principal?.FindFirstValue("ref")} is not protected");
+                }
+
                 return Task.CompletedTask;
             }
         };
