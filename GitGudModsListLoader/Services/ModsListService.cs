@@ -23,10 +23,9 @@ public class ModsListService(ILogger<ModsListService> logger, IModsScrubber mods
 
     public async Task ReloadAllAsync(CancellationToken token)
     {
-        var mods = GetFullModsInfo()
-            .ToAsyncEnumerable();
+        var mods = await GetFullModsInfo().ToListAsync(token);
 
-        await foreach (var mod in mods)
+        foreach (var mod in mods)
         {
             await ReloadModAsync(mod, token);
         }
