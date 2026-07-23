@@ -1,6 +1,5 @@
 using GitGudModsListLoader.Exceptions;
 using GitGudModsListLoader.Models;
-using GitGudModsListLoader.Persistence;
 using GitGudModsListLoader.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -62,6 +61,20 @@ public class ModsController(IModsListService modsListService) : ControllerBase
         {
             return NotFound(new { id });
         }
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Reload all mod details from gitgud.
+    /// </summary>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>200 - if succeded</returns>
+    [Authorize(Roles = "Admin")]
+    [HttpPost("reload/")]
+    public async Task<ActionResult> ReloadAll(CancellationToken token)
+    {
+        await modsListService.ReloadAllAsync(token);
 
         return Ok();
     }

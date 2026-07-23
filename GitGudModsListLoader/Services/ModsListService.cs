@@ -9,11 +9,7 @@ public class ModsListService(ILogger<ModsListService> logger, IModsScrubber mods
 {
     public async Task ReloadAsync(int id, CancellationToken token)
     {
-        var mod = await context.Mods
-            .Include(mod => mod.Titles)
-            .Include(mod => mod.Versions)
-            .Include(mod => mod.ModCategories)
-            .Include(mod => mod.Dependencies)
+        var mod = await GetFullModsInfo()
             .FirstOrDefaultAsync(mod => mod.Id == id, token);
 
         if (mod is null)
@@ -25,14 +21,20 @@ public class ModsListService(ILogger<ModsListService> logger, IModsScrubber mods
         await ReloadModAsync(mod, token);
     }
 
+    public async Task ReloadAllAsync(CancellationToken token)
+    {
+        var mods = GetFullModsInfo()
+            .ToAsyncEnumerable();
+
+        await foreach (var mod in mods)
+        {
+            await ReloadModAsync(mod, token);
+        }
+    }
 
     public async Task ReloadProjectAsync(long projectId, CancellationToken token)
     {
-        var mod = await context.Mods
-            .Include(mod => mod.Titles)
-            .Include(mod => mod.Versions)
-            .Include(mod => mod.ModCategories)
-            .Include(mod => mod.Dependencies)
+        var mod = await GetFullModsInfo()
             .FirstOrDefaultAsync(mod => mod.ProjectId == projectId, token);
 
         if (mod is null)
@@ -101,5 +103,14 @@ public class ModsListService(ILogger<ModsListService> logger, IModsScrubber mods
                 """,
                 token);
         }
+    }
+
+    private IQueryable<Mod> GetFullModsInfo()
+    {
+        return context.Mods
+            .Include(mod => mod.Titles)
+            .Include(mod => mod.Versions)
+            .Include(mod => mod.ModCategories)
+            .Include(mod => mod.Dependencies);
     }
 }

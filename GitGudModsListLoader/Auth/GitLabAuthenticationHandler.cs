@@ -51,9 +51,9 @@ public sealed class GitLabAuthenticationHandler(
 
             gitLabUser = await client.Users.GetCurrentUserAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            return AuthenticateResult.Fail("Invalid GitGud token");
+            return AuthenticateResult.Fail(ex);
         }
 
         var user = await _context.Users

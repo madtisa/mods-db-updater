@@ -12,5 +12,7 @@ public interface IModsListService
 
     Task ReloadAsync(int id, CancellationToken token);
 
+    Task ReloadAllAsync(CancellationToken token);
+
     Task ReloadProjectAsync(long projectId, CancellationToken token);
 }

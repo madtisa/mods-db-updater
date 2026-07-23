@@ -16,9 +16,8 @@ public class ProjectsController(IModsListService modsListService) : ControllerBa
     /// <param name="token">Cancellation token</param>
     /// <returns>200 - if succeded</returns>
     [Authorize(Policy = "ProjectReloadAccess")]
-    // TODO: Move to separate controller.
     [HttpPost("{projectId}/reload")]
-    public async Task<ActionResult> ReloadProject(long projectId, CancellationToken token)
+    public async Task<ActionResult> Reload(long projectId, CancellationToken token)
     {
         try
         {
